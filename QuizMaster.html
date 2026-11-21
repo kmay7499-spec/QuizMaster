@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QuizMaster | แบบทดสอบความรู้</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07070f; --card:#12121f; --line:#262640; --text:#eceaff; --muted:#9a98b8;
+  --violet:#8b5cf6; --blue:#3b82f6; --ok:#22c55e; --bad:#ef4444;
+}
+*{box-sizing:border-box;margin:0}
+body{
+  min-height:100vh; color:var(--text);
+  font-family:'Prompt','Noto Sans Thai',system-ui,sans-serif;
+  background:radial-gradient(900px 500px at 15% -10%,#2a1b5e 0,transparent 60%),
+             radial-gradient(800px 500px at 100% 100%,#10265e 0,transparent 55%),var(--bg);
+}
+.bar{display:flex;justify-content:space-between;gap:8px;padding:14px 18px;max-width:760px;margin:auto}
+.bar .icon-btn:only-child,#soundBtn{margin-left:auto}
+.icon-btn{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font:inherit;font-size:.85rem;cursor:pointer}
+.icon-btn:hover{border-color:var(--violet)}
+main{max-width:760px;margin:auto;padding:8px 18px 40px}
+.screen{display:none}
+.screen.active{display:block;animation:in .35s ease}
+@keyframes in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+#home{text-align:center;padding-top:9vh}
+.logo{font-size:clamp(2.8rem,10vw,4.8rem);font-weight:700;letter-spacing:-.02em}
+.logo span{background:linear-gradient(90deg,var(--violet),var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--muted);margin:14px auto 28px;max-width:46ch;line-height:1.7}
+h2{font-size:1.5rem;margin-bottom:18px}
+
+.btn{font:inherit;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 22px;cursor:pointer;transition:transform .15s,border-color .15s}
+.btn:hover{border-color:var(--violet);transform:translateY(-2px)}
+.btn.primary{background:linear-gradient(135deg,var(--violet),var(--blue));border:0;font-weight:500}
+.btn.big{font-size:1.15rem;padding:16px 38px}
+.btn:focus-visible,.icon-btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.cat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;text-align:left;color:var(--text);font:inherit;cursor:pointer;transition:.2s}
+.cat:hover{border-color:var(--violet);transform:translateY(-3px)}
+.cat .ico{font-size:2rem}
+.cat b{display:block;margin:10px 0 4px}
+.cat small{color:var(--muted)}
+
+.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.95rem;margin-bottom:10px}
+#timer.low{color:var(--bad);font-weight:700}
+.progress{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:24px}
+#bar{height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--blue));transition:width .4s}
+.question{font-size:1.35rem;line-height:1.6;margin-bottom:20px}
+.options{display:grid;gap:10px}
+.opt{text-align:left;font:inherit;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;transition:.15s}
+.opt:hover:not(:disabled){border-color:var(--violet)}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--ok);background:#0f2a1a}
+.opt.bad{border-color:var(--bad);background:#2d1216}
+.feedback{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;animation:in .3s}
+.feedback p{color:var(--muted);line-height:1.7;margin:6px 0 14px}
+.feedback.ok strong{color:var(--ok)}
+.feedback.bad strong{color:var(--bad)}
+
+#result{text-align:center}
+.ring{width:150px;height:150px;border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;
+  background:conic-gradient(var(--violet) calc(var(--p,0)*1%),var(--line) 0)}
+.ring b{width:118px;height:118px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:1.9rem}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+.stats div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 6px}
+.stats b{display:block;font-size:1.5rem}
+.stats small{color:var(--muted)}
+.msg{font-size:1.1rem;margin-bottom:22px}
+.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+@media (max-width:480px){.question{font-size:1.15rem}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+</style>
+</head>
+<body>
+<header class="bar">
+  <button id="homeBtn" class="icon-btn" hidden aria-label="กลับหน้าแรก">🏠 หน้าแรก</button>
+  <button id="soundBtn" class="icon-btn" aria-label="เปิดหรือปิดเสียง">🔊 เสียง: เปิด</button>
+</header>
+
+<main>
+  <section id="home" class="screen active">
+    <h1 class="logo">Quiz<span>Master</span></h1>
+    <p class="lead">ยินดีต้อนรับ! ทดสอบความรู้ของคุณ ตอบให้ทันเวลา แล้วดูว่าคุณทำคะแนนได้เท่าไร</p>
+    <button id="startBtn" class="btn primary big">เริ่มทำแบบทดสอบ</button>
+  </section>
+
+  <section id="category" class="screen">
+    <h2>เลือกหมวดหมู่</h2>
+    <div id="catList" class="grid"></div>
+  </section>
+
+  <section id="quiz" class="screen">
+    <div class="meta">
+      <span id="counter">ข้อ 1/5</span>
+      <span id="timer">⏱ 20</span>
+      <span id="score">คะแนน 0</span>
+    </div>
+    <div class="progress"><div id="bar"></div></div>
+    <h2 id="question" class="question"></h2>
+    <div id="options" class="options"></div>
+    <div id="feedback" class="feedback" hidden>
+      <strong id="fbTitle"></strong>
+      <p id="fbText"></p>
+      <button id="nextBtn" class="btn primary">ข้อถัดไป</button>
+    </div>
+  </section>
+
+  <section id="result" class="screen">
+    <h2>สรุปผลการทดสอบ</h2>
+    <div class="ring"><b id="pct">0%</b></div>
+    <p id="resCat" class="lead"></p>
+    <div class="stats">
+      <div><b id="resScore">0</b><small>คะแนน</small></div>
+      <div><b id="resCorrect">0</b><small>ข้อที่ถูก</small></div>
+      <div><b id="resBest">0</b><small>คะแนนสูงสุด</small></div>
+    </div>
+    <p id="msg" class="msg"></p>
+    <div class="row">
+      <button id="retryBtn" class="btn primary">ทำแบบทดสอบใหม่</button>
+      <button id="catBtn" class="btn">เลือกหมวดอื่น</button>
+    </div>
+  </section>
+</main>
+<script>
+"use strict";
+
+// ข้อมูลคำถาม: ตัวเลือกแรก (o[0]) คือคำตอบที่ถูกต้อง โปรแกรมจะสุ่มลำดับตัวเลือกให้อัตโนมัติ
+const DATA = {
+  tech: { name: "คอมพิวเตอร์และเทคโนโลยี", icon: "💻", list: [
+    { q: "CPU ย่อมาจากอะไร?", o: ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Core Processing Update"], e: "CPU คือ Central Processing Unit หรือหน่วยประมวลผลกลาง ทำหน้าที่ประมวลผลคำสั่งของคอมพิวเตอร์" },
+    { q: "ภาษาใดใช้กำหนดโครงสร้างของหน้าเว็บ?", o: ["HTML", "Python", "SQL", "C"], e: "HTML (HyperText Markup Language) ใช้กำหนดโครงสร้างและเนื้อหาของหน้าเว็บ" },
+    { q: "เลขฐานสอง 101 เท่ากับเลขฐานสิบข้อใด?", o: ["5", "3", "6", "7"], e: "101 ฐานสอง = 1×4 + 0×2 + 1×1 = 5" },
+    { q: "อุปกรณ์ใดเป็นหน่วยความจำชั่วคราวที่ข้อมูลหายเมื่อปิดเครื่อง?", o: ["RAM", "SSD", "HDD", "แผ่น DVD"], e: "RAM เป็นหน่วยความจำหลักแบบชั่วคราว ข้อมูลจะหายเมื่อไม่มีไฟเลี้ยง" },
+    { q: "ข้อใดคือระบบปฏิบัติการ?", o: ["Linux", "Chrome", "Python", "Excel"], e: "Linux เป็นระบบปฏิบัติการ ส่วน Chrome เป็นเว็บเบราว์เซอร์ Python เป็นภาษาโปรแกรม และ Excel เป็นโปรแกรมตารางคำนวณ" }
+  ]},
+  science: { name: "วิทยาศาสตร์", icon: "🔬", list: [
+    { q: "พืชใช้ก๊าซใดในการสังเคราะห์แสง?", o: ["คาร์บอนไดออกไซด์", "ออกซิเจน", "ไนโตรเจน", "ไฮโดรเจน"], e: "พืชนำคาร์บอนไดออกไซด์และน้ำมาสร้างน้ำตาล โดยใช้พลังงานแสง และปล่อยออกซิเจนออกมา" },
+    { q: "สูตรเคมีของน้ำคือข้อใด?", o: ["H₂O", "CO₂", "O₂", "NaCl"], e: "น้ำประกอบด้วยไฮโดรเจน 2 อะตอม และออกซิเจน 1 อะตอม จึงเขียนเป็น H₂O" },
+    { q: "ดาวเคราะห์ดวงใดอยู่ใกล้ดวงอาทิตย์ที่สุด?", o: ["ดาวพุธ", "ดาวศุกร์", "โลก", "ดาวอังคาร"], e: "ดาวพุธอยู่ใกล้ดวงอาทิตย์ที่สุดในบรรดาดาวเคราะห์ทั้งหมด" },
+    { q: "หน่วย SI ของแรงคือข้อใด?", o: ["นิวตัน", "จูล", "วัตต์", "พาสคัล"], e: "แรงมีหน่วย SI เป็นนิวตัน (N) ส่วนจูลเป็นหน่วยพลังงาน วัตต์เป็นกำลัง และพาสคัลเป็นความดัน" },
+    { q: "อวัยวะใดทำหน้าที่สูบฉีดเลือดไปทั่วร่างกาย?", o: ["หัวใจ", "ปอด", "ตับ", "ไต"], e: "หัวใจเป็นกล้ามเนื้อที่บีบตัวเพื่อสูบฉีดเลือดไปเลี้ยงทุกส่วนของร่างกาย" }
+  ]},
+  math: { name: "คณิตศาสตร์", icon: "📐", list: [
+    { q: "12 × 12 มีค่าเท่าใด?", o: ["144", "124", "132", "148"], e: "12 × 12 = 144" },
+    { q: "รากที่สองของ 81 คือข้อใด?", o: ["9", "8", "7", "11"], e: "9 × 9 = 81 ดังนั้นรากที่สองของ 81 คือ 9" },
+    { q: "สี่เหลี่ยมผืนผ้ากว้าง 6 หน่วย ยาว 4 หน่วย มีพื้นที่เท่าใด?", o: ["24 ตารางหน่วย", "20 ตารางหน่วย", "10 ตารางหน่วย", "48 ตารางหน่วย"], e: "พื้นที่ = กว้าง × ยาว = 6 × 4 = 24 ตารางหน่วย" },
+    { q: "ค่าประมาณของ π (พาย) คือข้อใด?", o: ["3.14", "2.71", "1.62", "4.13"], e: "π คืออัตราส่วนเส้นรอบวงต่อเส้นผ่านศูนย์กลางของวงกลม ประมาณ 3.14" },
+    { q: "2 ยกกำลัง 5 มีค่าเท่าใด?", o: ["32", "10", "16", "25"], e: "2⁵ = 2×2×2×2×2 = 32" }
+  ]},
+  general: { name: "ความรู้ทั่วไป", icon: "🌏", list: [
+    { q: "เมืองหลวงของประเทศญี่ปุ่นคือเมืองใด?", o: ["โตเกียว", "โอซากา", "เกียวโต", "ซัปโปโร"], e: "โตเกียวเป็นเมืองหลวงและเป็นเมืองที่ใหญ่ที่สุดของญี่ปุ่น" },
+    { q: "มหาสมุทรใดใหญ่ที่สุดในโลก?", o: ["มหาสมุทรแปซิฟิก", "มหาสมุทรแอตแลนติก", "มหาสมุทรอินเดีย", "มหาสมุทรอาร์กติก"], e: "มหาสมุทรแปซิฟิกมีพื้นที่ใหญ่ที่สุด ครอบคลุมราวหนึ่งในสามของพื้นผิวโลก" },
+    { q: "ประเทศไทยมีกี่จังหวัด (รวมกรุงเทพมหานคร)?", o: ["77 จังหวัด", "76 จังหวัด", "75 จังหวัด", "80 จังหวัด"], e: "ประเทศไทยมี 76 จังหวัด และกรุงเทพมหานคร รวมเป็น 77" },
+    { q: "ใครเป็นผู้แต่งวรรณคดีเรื่องพระอภัยมณี?", o: ["สุนทรภู่", "ศรีปราชญ์", "พระศรีมโหสถ", "เจ้าฟ้าธรรมธิเบศร"], e: "พระอภัยมณีเป็นนิทานคำกลอนที่แต่งโดยสุนทรภู่ กวีเอกสมัยรัตนโกสินทร์" },
+    { q: "ภูเขาใดสูงที่สุดในโลกเมื่อวัดจากระดับน้ำทะเล?", o: ["เอเวอเรสต์", "เค 2", "ฟูจิ", "คิลิมันจาโร"], e: "ยอดเขาเอเวอเรสต์ในเทือกเขาหิมาลัยสูงที่สุดเมื่อวัดจากระดับน้ำทะเล" }
+  ]}
+};
+
+const TIME = 20;        // วินาทีต่อข้อ
+const PER_Q = 10;       // คะแนนต่อข้อ
+const $ = (s) => document.querySelector(s);
+let cat, qs, idx, score, correct, locked, tick, left, soundOn = true, ctx;
+
+const shuffle = (a) => {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+// LocalStorage (ครอบด้วย try/catch เผื่อเบราว์เซอร์บล็อก)
+const getBest = (k) => { try { return +localStorage.getItem("qm_best_" + k) || 0; } catch (e) { return 0; } };
+const setBest = (k, v) => { try { localStorage.setItem("qm_best_" + k, v); } catch (e) {} };
+
+// เสียงด้วย Web Audio API
+function beep(freq, dur = 0.15) {
+  if (!soundOn) return;
+  try {
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = freq; o.type = "sine"; g.gain.value = 0.08;
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + dur);
+  } catch (e) {}
+}
+
+function show(id) {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === id));
+  $("#homeBtn").hidden = id === "home";
+}
+
+function renderCategories() {
+  $("#catList").innerHTML = "";
+  Object.entries(DATA).forEach(([key, c]) => {
+    const b = document.createElement("button");
+    b.className = "cat";
+    b.innerHTML = `<span class="ico">${c.icon}</span><b>${c.name}</b><small>${c.list.length} ข้อ • คะแนนสูงสุด ${getBest(key)}/${c.list.length * PER_Q}</small>`;
+    b.onclick = () => startQuiz(key);
+    $("#catList").appendChild(b);
+  });
+}
+
+function startQuiz(key) {
+  cat = key; score = 0; correct = 0; idx = 0;
+  qs = shuffle([...DATA[key].list]).map((q) => ({
+    ...q,
+    opts: shuffle(q.o.map((t, n) => ({ t, ok: n === 0 })))
+  }));
+  show("quiz");
+  showQuestion();
+}
+
+function showQuestion() {
+  locked = false;
+  const q = qs[idx];
+  $("#counter").textContent = `ข้อ ${idx + 1}/${qs.length}`;
+  $("#score").textContent = `คะแนน ${score}`;
+  $("#bar").style.width = (idx / qs.length) * 100 + "%";
+  $("#question").textContent = q.q;
+  $("#feedback").hidden = true;
+  const box = $("#options");
+  box.innerHTML = "";
+  q.opts.forEach((o, n) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.textContent = `${"กขคง"[n]}. ${o.t}`;
+    b.onclick = () => answer(n);
+    box.appendChild(b);
+  });
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(tick);
+  left = TIME;
+  updateTimer();
+  tick = setInterval(() => {
+    left--;
+    updateTimer();
+    if (left <= 0) answer(-1);
+  }, 1000);
+}
+
+function updateTimer() {
+  $("#timer").textContent = `⏱ ${Math.max(left, 0)}`;
+  $("#timer").classList.toggle("low", left <= 5);
+}
+
+function answer(n) {
+  if (locked) return;
+  locked = true;
+  clearInterval(tick);
+  const q = qs[idx];
+  const isOk = n >= 0 && q.opts[n].ok;
+  document.querySelectorAll(".opt").forEach((b, i) => {
+    b.disabled = true;
+    if (q.opts[i].ok) b.classList.add("ok");
+    else if (i === n) b.classList.add("bad");
+  });
+  if (isOk) { score += PER_Q; correct++; beep(880); } else beep(220, 0.3);
+  $("#score").textContent = `คะแนน ${score}`;
+  const fb = $("#feedback");
+  fb.className = "feedback " + (isOk ? "ok" : "bad");
+  $("#fbTitle").textContent = isOk ? "✅ ตอบถูกต้อง!" : n === -1 ? "⏰ หมดเวลา" : "❌ ตอบผิด";
+  $("#fbText").textContent = q.e;
+  $("#nextBtn").textContent = idx === qs.length - 1 ? "ดูผลลัพธ์" : "ข้อถัดไป";
+  fb.hidden = false;
+}
+
+function finish() {
+  const total = qs.length * PER_Q;
+  const pct = Math.round((correct / qs.length) * 100);
+  if (score > getBest(cat)) setBest(cat, score);
+  $("#bar").style.width = "100%";
+  $("#resCat").textContent = DATA[cat].name;
+  $("#resScore").textContent = `${score}/${total}`;
+  $("#resCorrect").textContent = `${correct}/${qs.length}`;
+  $("#resBest").textContent = `${getBest(cat)}/${total}`;
+  $("#pct").textContent = pct + "%";
+  $(".ring").style.setProperty("--p", pct);
+  $("#msg").textContent =
+    pct === 100 ? "🏆 เยี่ยมมาก! คุณตอบถูกทุกข้อ" :
+    pct >= 80 ? "🎉 ยอดเยี่ยม! ความรู้แน่นมาก" :
+    pct >= 60 ? "👍 ทำได้ดี อีกนิดเดียวก็เต็มแล้ว" :
+    pct >= 40 ? "💪 ไม่เลว ลองทบทวนแล้วทำใหม่อีกครั้ง" :
+                "🌱 ไม่เป็นไร ทุกครั้งที่ลองคือการเรียนรู้ สู้ต่อ!";
+  show("result");
+  beep(pct >= 60 ? 1040 : 330, 0.4);
+}
+
+// ปุ่มต่าง ๆ
+$("#startBtn").onclick = () => { renderCategories(); show("category"); };
+$("#homeBtn").onclick = () => { clearInterval(tick); show("home"); };
+$("#nextBtn").onclick = () => { idx++; idx < qs.length ? showQuestion() : finish(); };
+$("#retryBtn").onclick = () => startQuiz(cat);
+$("#catBtn").onclick = () => { renderCategories(); show("category"); };
+$("#soundBtn").onclick = () => {
+  soundOn = !soundOn;
+  $("#soundBtn").textContent = soundOn ? "🔊 เสียง: เปิด" : "🔇 เสียง: ปิด";
+  beep(660, 0.1);
+};
+
+</script>
+</body>
+</html>
